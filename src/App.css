@@ -1,0 +1,182 @@
+/* ================================
+   Modern, roomy, top-left layout
+   ================================ */
+
+:root{
+  --bg:#0b0f17;
+  --panel:#0f1522;
+  --panel-2:#0b1220;
+  --text:#e8eef7;
+  --muted:#9fb0c2;
+  --accent:#3ddc97;
+  --danger:#ff6b6b;
+  --border:#23304a;
+  --input:#101a2b;
+  --input-border:#1e2a44;
+}
+
+/* Base reset */
+*{box-sizing:border-box}
+html,body,#root{height:100%}
+body{
+  margin:0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  color:var(--text);
+  background: linear-gradient(180deg,#0b0f17 0%, #0a0e14 100%);
+}
+
+/* Container:
+   - left-aligned (not centered)
+   - big horizontal padding
+   - tight top spacing */
+.container{
+  margin: 0;                 /* not centered */
+  padding: 100px 40px;        /* roomy side padding */
+  max-width: none;           /* allow full width */
+}
+
+/* Header */
+.header{ margin: 8px 0 18px }
+.header h1{
+  margin:0;
+  font-size:38px;
+  letter-spacing:.2px;
+  font-weight:800;
+}
+
+/* Panels / cards */
+.panel{
+  background:linear-gradient(180deg, var(--panel), var(--panel-2));
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:18px 20px;         /* more inner padding */
+  margin-bottom:18px;
+  box-shadow: 0 6px 24px rgba(0,0,0,.25);
+}
+
+/* Toolbar (search + sort) */
+.toolbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  flex-wrap:wrap;
+  margin-bottom:14px;
+}
+
+/* Inputs/selects/buttons */
+label{display:grid;gap:6px;font-size:12px;color:var(--muted)}
+
+input, select{
+  padding:12px 14px;                     /* bigger inputs */
+  border-radius:12px;
+  border:1px solid var(--input-border);
+  background:var(--input);
+  color:var(--text);
+  width:100%;
+}
+input::placeholder{ color: var(--muted) }
+
+.btn{
+  padding:10px 14px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:#0f182a;
+  color:var(--text);
+  cursor:pointer;
+}
+.btn:hover{ border-color:#3a4c75 }
+.btn:disabled{ opacity:.55; cursor:not-allowed }
+.btn.primary{
+  background:linear-gradient(180deg, #52f0b2, #27d58f);
+  color:#082a1f;
+  border:none;
+  font-weight:700;
+}
+.btn.danger{ background:#251218; border-color:#4b2030; color:#ffd7d7 }
+
+/* Grid for the form:
+   - wide columns with good gaps
+   - collapses nicely on small screens */
+.grid{
+  display:grid;
+  grid-template-columns: repeat(12, minmax(90px, 1fr));
+  gap:14px 16px;                                 /* row/column gaps */
+}
+.span-2{ grid-column: span 2 }
+.span-3{ grid-column: span 3 }
+.span-6{ grid-column: span 6 }
+
+@media (max-width:1100px){
+  .grid{ grid-template-columns: repeat(6, minmax(90px, 1fr)); }
+  .span-6{ grid-column: span 6 }
+  .span-3{ grid-column: span 3 }
+  .span-2{ grid-column: span 3 }
+}
+@media (max-width:700px){
+  .grid{ grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+  .span-6, .span-3, .span-2{ grid-column: span 2 }
+}
+
+/* Small helpers */
+.row{ display:flex; align-items:center }
+.gap{ gap:12px }
+.gap-s{ gap:6px }
+.hint{ color:var(--muted); font-size:12px }
+
+/* Table:
+   - left anchored
+   - larger cell padding for breathing room
+   - fixed layout to keep columns tidy
+*/
+.table-wrap{
+  overflow:auto;
+  border:1px solid var(--border);
+  border-radius:14px;
+  background:transparent;
+}
+
+.table{
+  width:100%;
+  border-collapse:separate;            /* allow border-spacing for extra air */
+  border-spacing:0;                    /* reset default */
+  table-layout:fixed;                  /* more even columns */
+}
+
+.table th,
+.table td{
+  padding:14px 16px;                   /* more spacing between columns */
+  border-bottom:1px solid var(--border);
+  text-align:left;
+  vertical-align:top;
+}
+
+.table th{
+  font-size:12px;
+  color:var(--muted);
+  font-weight:700;
+}
+
+.cell-wrap{
+  white-space:normal;
+  overflow-wrap:anywhere;
+  max-width: 520px;                    /* let description/notes wrap */
+}
+
+.actions-cell{ display:flex; gap:10px }
+
+/* Empty state */
+.empty{ padding:16px; color:var(--muted) }
+
+/* Pagination */
+.pagination{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-top:16px;
+}
+
+.pager{ display:flex; align-items:center; gap:8px }
+.btn.page{ min-width:38px; padding:8px 10px }
+.btn.page.active{ background:#22314d; border-color:#4a6aa8 }
+.dots{ padding:0 6px; color:var(--muted) }
