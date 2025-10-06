@@ -4,7 +4,9 @@ from decimal import Decimal
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from sqlalchemy import create_engine, Column, String, Text, Numeric, DateTime, func
+from sqlalchemy import (
+    create_engine, Column, String, Text, Numeric, DateTime, func, text
+)
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -15,8 +17,10 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL env var is required")
 
-# Render often provides 'postgres://' or 'postgresql://'
-# Use psycopg (v3) driver explicitly for SQLAlchemy:
+# Explicit schema (defaults to "public")
+DB_SCHEMA = os.getenv("DB_SCHEMA", "public")
+
+# Use psycopg v3 driver with SQLAlchemy
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
 elif DATABASE_URL.startswith("postgresql://"):
@@ -43,6 +47,7 @@ class Base(DeclarativeBase):
 
 class Macro(Base):
     __tablename__ = "macros"
+    __table_args__ = {"schema": DB_SCHEMA}  # <-- ensure table is created in the schema
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     item = Column(Text, nullable=False)
@@ -54,20 +59,24 @@ class Macro(Base):
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     def to_dict(self):
-        val = float(self.multiplier) if self.multiplier is not None else None
         return {
             "id": self.id,
             "item": self.item,
             "model": self.model,
             "description": self.description,
             "vendor": self.vendor,
-            "multiplier": val,
+            "multiplier": float(self.multiplier) if self.multiplier is not None else None,
             "notes": self.notes,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
 
-# Create tables if they don't exist
+# Ensure schema exists, then create tables
+with engine.begin() as conn:
+    # Create schema if missing (safe to run repeatedly)
+    conn.execute(text(f'CREATE SCHEMA IF NOT EXISTS "{DB_SCHEMA}"'))
+    # Optional: set search_path for this connection so ad-hoc queries also work
+    conn.execute(text(f'SET search_path TO "{DB_SCHEMA}"'))
 Base.metadata.create_all(engine)
 
 app = Flask(__name__)
@@ -87,11 +96,11 @@ def list_macros():
         return jsonify([m.to_dict() for m in rows])
 
 
-def _validate(payload):
-    for field in ("item", "model", "description", "vendor"):
-        if not str(payload.get(field, "")).strip():
-            return f"{field} is required"
-    m = payload.get("multiplier", None)
+def _validate(p):
+    for f in ("item", "model", "description", "vendor"):
+        if not str(p.get(f, "")).strip():
+            return f"{f} is required"
+    m = p.get("multiplier", None)
     if m not in ("", None):
         try:
             float(m)
@@ -100,14 +109,14 @@ def _validate(payload):
     return None
 
 
-def _normalize(payload):
+def _normalize(p):
     return {
-        "item": str(payload["item"]).strip(),
-        "model": str(payload["model"]).strip(),
-        "description": str(payload["description"]).strip(),
-        "vendor": str(payload["vendor"]).strip(),
-        "multiplier": (Decimal(str(payload["multiplier"])) if payload.get("multiplier") not in ("", None) else None),
-        "notes": (str(payload["notes"]).strip() if payload.get("notes") else None),
+        "item": str(p["item"]).strip(),
+        "model": str(p["model"]).strip(),
+        "description": str(p["description"]).strip(),
+        "vendor": str(p["vendor"]).strip(),
+        "multiplier": (Decimal(str(p["multiplier"])) if p.get("multiplier") not in ("", None) else None),
+        "notes": (str(p["notes"]).strip() if p.get("notes") else None),
     }
 
 
@@ -138,7 +147,7 @@ def update_macro(id):
 
     try:
         with SessionLocal() as db:
-            rec = db.query(Macro).get(id)
+            rec = db.get(Macro, id)
             if not rec:
                 return jsonify({"error": "not found"}), 404
 
@@ -161,7 +170,7 @@ def update_macro(id):
 def delete_macro(id):
     try:
         with SessionLocal() as db:
-            rec = db.query(Macro).get(id)
+            rec = db.get(Macro, id)
             if not rec:
                 return jsonify({"error": "not found"}), 404
             db.delete(rec)
